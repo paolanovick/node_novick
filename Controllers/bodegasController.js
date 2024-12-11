@@ -1,27 +1,27 @@
-//import Bodegas from "../Model/bodegasModel.js"; 
+//import Bodegas from "../Model/bodegasModel.js";
 import mongoose from "mongoose";
 
 import { bodegasValidacion } from "../validation/bodegasValidations.js";
 //import Vino from "../Model/vinosModel.js"; // Asegúrate de que este import sea necesario
 
-
-import Bodegas from '../Model/bodegasModel.js';
-import Vino from '../Model/vinosModel.js';
+import Bodegas from "../Model/bodegasModel.js";
+import Vino from "../Model/vinosModel.js";
 
 // Crear una nueva bodega
 export const crearBodega = async (req, res) => {
   try {
     const nuevaBodega = new Bodegas({
       nombre: req.body.nombre,
+      userId: req.user.id,
       vinos: req.body.vinos,
-      cantidad: req.body.cantidad
+      cantidad: req.body.cantidad,
     });
 
     const bodegaGuardada = await nuevaBodega.save();
     res.status(201).json(bodegaGuardada);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al crear la bodega' });
+    res.status(500).json({ error: "Error al crear la bodega" });
   }
 };
 
@@ -54,7 +54,6 @@ export const obtenerBodegas = async (req, res) => {
   }
 };
 
-
 // Obtener una bodega por ID
 export const obtenerBodegaPorId = async (req, res) => {
   try {
@@ -69,14 +68,12 @@ export const obtenerBodegaPorId = async (req, res) => {
   }
 };
 
-
-
 export const obtenerBodegaPorNombre = async (req, res) => {
   try {
     const { nombre } = req.params;
 
     // Busca por el nombre de la bodega
-    const bodega = await Bodegas.findOne({ nombre: nombre }).populate('vinos');
+    const bodega = await Bodegas.findOne({ nombre: nombre }).populate("vinos");
 
     if (!bodega) {
       return res.status(404).json({ error: "Bodega no encontrada" });
@@ -88,14 +85,6 @@ export const obtenerBodegaPorNombre = async (req, res) => {
     res.status(500).json({ error: "Error al obtener la bodega" });
   }
 };
-
-
-
-
-
-
-
-
 
 // Actualizar una bodega por ID
 export const actualizarBodega = async (req, res) => {
@@ -117,7 +106,6 @@ export const actualizarBodega = async (req, res) => {
   }
 };
 
-
 // Eliminar una bodega por ID
 export const eliminarBodega = async (req, res) => {
   try {
@@ -131,9 +119,6 @@ export const eliminarBodega = async (req, res) => {
     res.status(500).json({ error: "Error al eliminar la bodega" }); // Cambié a 500
   }
 };
-
-
-
 
 // Ruta para agregar un vino a la bodega
 // export const agregarVinoABodega = async (req, res) => {
@@ -190,8 +175,13 @@ export const agregarVinoABodega = async (req, res) => {
   const { id } = req.params; // ID de la bodega
   const { vinoId } = req.body; // ID del vino
 
-  if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(vinoId)) {
-    return res.status(400).json({ message: "El ID de la bodega o del vino no es válido" });
+  if (
+    !mongoose.Types.ObjectId.isValid(id) ||
+    !mongoose.Types.ObjectId.isValid(vinoId)
+  ) {
+    return res
+      .status(400)
+      .json({ message: "El ID de la bodega o del vino no es válido" });
   }
 
   try {
@@ -214,7 +204,9 @@ export const agregarVinoABodega = async (req, res) => {
       bodega.vinos.push(vinoId);
       await bodega.save();
     } else {
-      return res.status(400).json({ message: "El vino ya está asociado a esta bodega" });
+      return res
+        .status(400)
+        .json({ message: "El vino ya está asociado a esta bodega" });
     }
 
     res.status(200).json({
@@ -223,12 +215,12 @@ export const agregarVinoABodega = async (req, res) => {
     });
   } catch (error) {
     console.error("Error al agregar el vino a la bodega:", error);
-    res.status(500).json({ message: "Error al agregar el vino a la bodega", error: error.message });
+    res.status(500).json({
+      message: "Error al agregar el vino a la bodega",
+      error: error.message,
+    });
   }
 };
-
-
-
 
 // Ruta para eliminar un vino de la bodega
 export const eliminarVinoDeBodega = async (req, res) => {
@@ -238,14 +230,13 @@ export const eliminarVinoDeBodega = async (req, res) => {
 
     // Actualiza la bodega para eliminar el vino
     await Bodegas.findByIdAndUpdate(bodegaId, { $pull: { vinos: vinoId } });
-    res.status(200).json({ mensaje: "Vino eliminado de la bodega exitosamente" });
+    res
+      .status(200)
+      .json({ mensaje: "Vino eliminado de la bodega exitosamente" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
-
-
-
 
 export const obtenerBodegasConPaginado = async (req, res) => {
   try {
@@ -255,7 +246,9 @@ export const obtenerBodegasConPaginado = async (req, res) => {
     const limitNumber = Number(limit);
 
     if (isNaN(pageNumber) || isNaN(limitNumber)) {
-      return res.status(400).json({ error: "Page y limit deben ser números válidos" });
+      return res
+        .status(400)
+        .json({ error: "Page y limit deben ser números válidos" });
     }
 
     // Obtener bodegas con paginación
@@ -263,8 +256,8 @@ export const obtenerBodegasConPaginado = async (req, res) => {
       .limit(limitNumber)
       .skip((pageNumber - 1) * limitNumber)
       .populate({
-        path: 'vinos',
-        select: 'nombre tipo' // Seleccionar solo los campos necesarios
+        path: "vinos",
+        select: "nombre tipo", // Seleccionar solo los campos necesarios
       });
 
     const totalBodegas = await Bodegas.countDocuments();
@@ -273,20 +266,13 @@ export const obtenerBodegasConPaginado = async (req, res) => {
       bodegas,
       currentPage: pageNumber,
       totalPages: Math.ceil(totalBodegas / limitNumber),
-      totalBodegas
+      totalBodegas,
     });
   } catch (error) {
-    console.error('Error al obtener bodegas con paginado:', error);
+    console.error("Error al obtener bodegas con paginado:", error);
     res.status(500).json({ error: "Error al obtener las bodegas" });
   }
 };
-
-
-
-
-
-
-
 
 export const listarTodasLasBodegas = async (req, res) => {
   try {

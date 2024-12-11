@@ -34,12 +34,16 @@ export const getUserById = async (req, res) => {
 
 // Crear un nuevo usuario
 export const createUser = async (req, res) => {
+  //Crea un usuario que no es administrador
   try {
     const { name, email, password } = req.body;
+    const rol = "user";
 
     // Verificar campos requeridos
     if (!name || !email || !password) {
-      return res.status(400).json({ message: "Todos los campos son obligatorios" });
+      return res
+        .status(400)
+        .json({ message: "Todos los campos son obligatorios" });
     }
 
     // Verificar si el correo ya está registrado
@@ -49,39 +53,38 @@ export const createUser = async (req, res) => {
     }
 
     // Crear el nuevo usuario con contraseña hasheada
-    const newUser = new User({ name, email, password });
+    const newUser = new User({ name, email, password, rol });
     await newUser.save();
 
-    res.status(201).json({ message: "Usuario creado exitosamente", user: newUser });
+    res
+      .status(201)
+      .json({ message: "Usuario creado exitosamente", user: newUser });
   } catch (error) {
     console.error("Error al crear usuario:", error);
-    res.status(500).json({ message: "Error al crear usuario", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error al crear usuario", error: error.message });
   }
 };
-
 
 // export const loginUser = async (req, res) => {
 //   try {
 //     const { email, password } = req.body;
 
-   
 //     if (!email || !password) {
 //       return res.status(400).json({ message: "Correo y contraseña son obligatorios" });
 //     }
 
-    
 //     const user = await User.findOne({ email });
 //     if (!user) {
 //       return res.status(404).json({ message: "Usuario no encontrado" });
 //     }
 
-  
 //     const validPassword = await bcrypt.compare(password, user.password);
 //     if (!validPassword) {
 //       return res.status(401).json({ message: "Contraseña incorrecta" });
 //     }
 
-  
 //     const token = jwt.sign({ id: user._id, email: user.email }, secretKey, { expiresIn: "1h" });
 
 //     res.json({
@@ -103,7 +106,9 @@ export const loginUser = async (req, res) => {
 
     // Validar que se envíen los datos necesarios
     if (!email || !password) {
-      return res.status(400).json({ message: "Correo y contraseña son obligatorios" });
+      return res
+        .status(400)
+        .json({ message: "Correo y contraseña son obligatorios" });
     }
 
     // Buscar el usuario por correo
@@ -119,7 +124,11 @@ export const loginUser = async (req, res) => {
     }
 
     // Generar el token JWT
-    const token = jwt.sign({ id: user._id, email: user.email }, secretKey, { expiresIn: "1h" });
+    const token = jwt.sign({ id: user._id, email: user.email }, secretKey, {
+      expiresIn: "1h",
+    });
+    let rol = "user";
+    if (user.rol && user.rol === "admin") rol = "admin";
 
     // Responder con el token y los datos del usuario
     return res.status(200).json({
@@ -127,15 +136,15 @@ export const loginUser = async (req, res) => {
       token,
       name: user.name,
       email: user.email,
+      rol: rol,
     });
   } catch (error) {
     console.error("Error al iniciar sesión:", error);
-    return res.status(500).json({ message: "Error al iniciar sesión", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Error al iniciar sesión", error: error.message });
   }
 };
-
-
-
 
 // Actualizar un usuario
 export const updateUser = async (req, res) => {
@@ -157,7 +166,9 @@ export const updateUser = async (req, res) => {
     }
 
     const updatedUser = await user.save();
-    res.status(200).json({ message: "Usuario actualizado exitosamente", user: updatedUser });
+    res
+      .status(200)
+      .json({ message: "Usuario actualizado exitosamente", user: updatedUser });
   } catch (error) {
     console.error("Error al actualizar usuario:", error);
     res.status(500).json({ message: "Error al actualizar usuario" });
