@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 import {
   crearVino,
   obtenerVinos,
@@ -6,12 +6,10 @@ import {
   actualizarVino,
   eliminarVino,
   obtenerVinosPorNombre,
-  obtenerVinosPorTipo,       // Nueva función de filtrado por tipo
+  obtenerVinosPorTipo, // Nueva función de filtrado por tipo
   obtenerVinosConOrdenamiento, // Nueva función para ordenamiento
-  obtenerVinosConPaginado      // Nueva función para paginado
-  
-} from '../Controllers/vinosController.js';
-
+  obtenerVinosConPaginado, // Nueva función para paginado
+} from "../Controllers/vinosController.js";
 
 import { verificarToken } from "../middlewares/AuthMiddleware.js";
 
@@ -19,7 +17,7 @@ const router = express.Router();
 
 // Rutas para vinos
 
-router.get("/", obtenerVinos); // Crear un nuevo vino
+router.get("/", verificarToken, obtenerVinos); // Crear un nuevo vino
 router.post("/", crearVino); // Crear un nuevo vino
 router.get("/pagina", obtenerVinosConPaginado); // Obtener vinos con paginado (también puedes incluir paginado y orden aquí)
 router.get("/nombre/:nombre", obtenerVinosPorNombre); // Obtener vinos por nombre

@@ -1,6 +1,7 @@
 import Vinos from "../Model/vinosModel.js";
 
 import Bodega from "../Model/bodegasModel.js";
+import User from "../Model/usersModelMongo.js";
 
 // Crear un nuevo vino
 // export const crearVino = async (req, res) => {
@@ -16,7 +17,24 @@ import Bodega from "../Model/bodegasModel.js";
 // Obtener todos los vinos
 export const obtenerVinos = async (req, res) => {
   try {
-    const vinos = await Vinos.find().populate('bodega', 'nombre');;
+    console.log(req.user);
+    const user = await User.findOne({ email: req.user.email });
+    console.log("El usuario es : ");
+    console.log(user); // Asegúrate de que `req.user` tenga el email
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    let query = {};
+
+    // Si el usuario no es admin, filtrar por `userId`
+    if (user.rol !== "admin") {
+      let bodega = await Bodega.findOne({ userId: user._id });
+      //return res.json(bodega);
+
+      query["bodega"] = bodega._id; // Asumiendo que las bodegas tienen un campo `userId` con referencia al usuario
+    }
+    const vinos = await Vinos.find(query).populate("bodega");
     res.json(vinos);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -126,19 +144,21 @@ export const crearVino = async (req, res) => {
 //   }
 // };
 
-
 export const crearVino = async (req, res) => {
   try {
-    const { nombre, tipo, precio, descripcion, imageUrl } = req.body;
+    const { nombre, tipo, precio, descripcion, imageUrl, bodega } = req.body;
 
     // Validar campos requeridos
     if (!nombre || !tipo || !precio) {
-      return res.status(400).json({ message: 'Todos los campos requeridos deben completarse' });
+      return res
+        .status(400)
+        .json({ message: "Todos los campos requeridos deben completarse" });
     }
 
     // Crear un nuevo vino
     const nuevoVino = new Vinos({
       nombre,
+      bodega,
       tipo,
       precio,
       descripcion,
@@ -147,14 +167,19 @@ export const crearVino = async (req, res) => {
 
     // Guardar el vino en la base de datos
     const vinoGuardado = await nuevoVino.save();
+    //insertar el id del vino en el arreglo de vinos de la bodega
+    //primero buscar la bodega
+    const _bodega = await Bodega.findById(bodega);
 
+    _bodega.vinos.push(vinoGuardado);
     res.status(201).json(vinoGuardado);
   } catch (error) {
-    console.error('Error al crear el vino:', error);
-    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+    console.error("Error al crear el vino:", error);
+    res
+      .status(500)
+      .json({ message: "Error interno del servidor", error: error.message });
   }
 };
-
 
 // Eliminar un vino y actualizar la bodega correspondiente
 export const eliminarVino = async (req, res) => {
@@ -178,18 +203,18 @@ export const eliminarVino = async (req, res) => {
   }
 };
 
-
-
 // Buscar vinos por nombre
 export const obtenerVinosPorNombre = async (req, res) => {
   try {
     const { nombre } = req.params;
-    
+
     // Usamos una expresión regular para hacer la búsqueda flexible (case insensitive)
-    const vinos = await Vinos.find({ nombre: new RegExp(nombre, 'i') });
-    
+    const vinos = await Vinos.find({ nombre: new RegExp(nombre, "i") });
+
     if (!vinos || vinos.length === 0) {
-      return res.status(404).json({ error: "No se encontraron vinos con ese nombre" });
+      return res
+        .status(404)
+        .json({ error: "No se encontraron vinos con ese nombre" });
     }
 
     res.status(200).json(vinos);
@@ -198,29 +223,19 @@ export const obtenerVinosPorNombre = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
-
-
-
 //////////////////////////////////////
-
-
 
 export const obtenerVinosPorTipo = async (req, res) => {
   try {
     const { tipo } = req.params;
 
     // Filtrar vinos por tipo (tinto, blanco, rosado, etc.)
-    const vinos = await Vinos.find({ tipo: new RegExp(tipo, 'i') });
+    const vinos = await Vinos.find({ tipo: new RegExp(tipo, "i") });
 
     if (!vinos || vinos.length === 0) {
-      return res.status(404).json({ error: "No se encontraron vinos de ese tipo" });
+      return res
+        .status(404)
+        .json({ error: "No se encontraron vinos de ese tipo" });
     }
 
     res.status(200).json(vinos);
@@ -228,7 +243,6 @@ export const obtenerVinosPorTipo = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
 
 // Obtener todos los vinos con soporte de ordenamiento
 export const obtenerVinosConOrdenamiento = async (req, res) => {
@@ -236,8 +250,8 @@ export const obtenerVinosConOrdenamiento = async (req, res) => {
     const { campo, orden } = req.query; // 'campo' puede ser 'nombre' o 'tipo' y 'orden' puede ser 'asc' o 'desc'
 
     // Default: orden por nombre ascendente si no se especifica nada
-    const sortBy = campo || 'nombre';
-    const sortOrder = orden === 'desc' ? -1 : 1; // -1 para descendente, 1 para ascendente
+    const sortBy = campo || "nombre";
+    const sortOrder = orden === "desc" ? -1 : 1; // -1 para descendente, 1 para ascendente
 
     const vinos = await Vinos.find().sort({ [sortBy]: sortOrder });
 
@@ -246,9 +260,6 @@ export const obtenerVinosConOrdenamiento = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
-
-
 
 /// Obtener vinos con paginado
 export const obtenerVinosConPaginado = async (req, res) => {

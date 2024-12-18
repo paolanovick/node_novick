@@ -1,5 +1,6 @@
 //import Bodegas from "../Model/bodegasModel.js";
 import mongoose from "mongoose";
+import User from "../Model/usersModelMongo.js";
 
 import { bodegasValidacion } from "../validation/bodegasValidations.js";
 //import Vino from "../Model/vinosModel.js"; // Asegúrate de que este import sea necesario
@@ -27,24 +28,35 @@ export const crearBodega = async (req, res) => {
 
 export const obtenerBodegas = async (req, res) => {
   try {
-    // Obtener los parámetros de consulta de la URL
-    const { tipoVino, nombreBodega } = req.query;
+    // Obtener parámetros de consulta desde la URL
+    const { tipoVino, nombre } = req.query;
 
     // Crear una consulta dinámica basada en los filtros proporcionados
     let query = {};
 
     // Filtrar por el nombre de la bodega (Bianchi, Norton, Rutini, etc.)
-    if (nombreBodega) {
-      query.nombre = new RegExp(nombreBodega, "i"); // Búsqueda insensible a mayúsculas/minúsculas
+    if (nombre) {
+      query["nombre"] = new RegExp(nombre, "i"); // Búsqueda insensible a mayúsculas/minúsculas
     }
 
     // Filtrar por el tipo de vino (tinto, blanco, rosado)
     if (tipoVino) {
-      query["vinos.tipo"] = new RegExp(tipoVino, "i"); // 'vinos.tipo' es el campo donde guardas el tipo de vino
+      query["vinos.tipo"] = new RegExp(tipoVino, "i"); // Campo 'vinos.tipo'
     }
 
-    // Buscar las bodegas en la base de datos que coincidan con los filtros
-    const bodegas = await Bodegas.find(query).populate("vinos");
+    // Verificar el rol del usuario desde `req.user`
+    const user = await User.findOne({ email: req.user.email }); // Asegúrate de que `req.user` tenga el email
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    // Si el usuario no es admin, filtrar por `userId`
+    if (user.rol !== "admin") {
+      query["userId"] = user._id; // Asumiendo que las bodegas tienen un campo `userId` con referencia al usuario
+    }
+
+    // Buscar las bodegas que coincidan con los filtros
+    const bodegas = await Bodegas.find(query).populate("vinos"); // Popula los vinos si es necesario
 
     // Devolver las bodegas en formato JSON
     res.json(bodegas);
@@ -250,9 +262,19 @@ export const obtenerBodegasConPaginado = async (req, res) => {
         .status(400)
         .json({ error: "Page y limit deben ser números válidos" });
     }
+    let query = {};
+    const user = await User.findOne({ email: req.user.email }); // Asegúrate de que `req.user` tenga el email
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    // Si el usuario no es admin, filtrar por `userId`
+    if (user.rol !== "admin") {
+      query["userId"] = user._id; // Asumiendo que las bodegas tienen un campo `userId` con referencia al usuario
+    }
 
     // Obtener bodegas con paginación
-    const bodegas = await Bodegas.find()
+    const bodegas = await Bodegas.find(query)
       .limit(limitNumber)
       .skip((pageNumber - 1) * limitNumber)
       .populate({

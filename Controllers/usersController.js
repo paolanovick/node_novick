@@ -55,10 +55,20 @@ export const createUser = async (req, res) => {
     // Crear el nuevo usuario con contraseña hasheada
     const newUser = new User({ name, email, password, rol });
     await newUser.save();
+    const token = jwt.sign(
+      { id: newUser._id, email: newUser.email },
+      secretKey,
+      {
+        expiresIn: "1h",
+      }
+    );
 
     res
       .status(201)
-      .json({ message: "Usuario creado exitosamente", user: newUser });
+      .json({
+        message: "Usuario creado exitosamente",
+        user: { newUser, token },
+      });
   } catch (error) {
     console.error("Error al crear usuario:", error);
     res

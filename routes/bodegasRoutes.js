@@ -21,12 +21,12 @@ const router = express.Router();
 router.post("/", bodegasValidacion, verificarToken, crearBodega);
 
 // Ruta para obtener todas las bodegas
-router.get("/", obtenerBodegas);
+router.get("/", verificarToken, obtenerBodegas);
 
 router.get("/listar", listarTodasLasBodegas);
 
 // Ruta para obtener bodegas con paginado
-router.get("/pagina", obtenerBodegasConPaginado);
+router.get("/pagina", verificarToken, obtenerBodegasConPaginado);
 
 // Ruta para obtener una bodega por ID
 router.get("/:id", obtenerBodegaPorId);
